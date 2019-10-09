@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# $FreeBSD: DELEGATE 2016/10/26 Tejix Club $
+# http://freebsdnoki.blogspot.com/p/delegate.html
+#
+# PROVIDE: delegated
+# REQUIRE: DAEMON
+# KEYWORD: FreeBSD
+#
+# Add the following line to /etc/rc.conf to enable delegated:
+#
+# delegated_enable="YES"
+# delegated_admin="root@localhost"
+# delegated_logdir="/var/log/delegate"
+# delegated_list="conf1 conf2"
+# delegated_conf1_flags="-Px.x.x.x:xxxx ..."
+# delegated_conf2_flags="+=/usr/local/etc/delegate/mine.conf"
+#
+ 
+. /etc/rc.subr
+ 
+name="delegated"
+rcvar=`set_rcvar`
+confdir="/usr/local/etc/delegate"
+command="/usr/local/sbin/${name}"
+start_cmd="delegated_start"
+stop_cmd="delegated_stop"
+status_cmd="delegated_status"
+ 
+delegated_enable=${delegated_enable:-"NO"}
+delegated_admin=${delegated_admin:-"root@localhost"}
+delegated_logdir=${delegated_logdir:-"/var/log/delegate"}
+delegated_list=${delegated_list-}
+
+create_logdir() {
+	if [ ! -e "${delegated_logdir}" ]; then
+		mkdir -p "${delegated_logdir}" && chown nobody:nobody "${delegated_logdir}"
+	fi
+}
+
+delegated_start() {
+	create_logdir
+	echo -n "Starting delegated for"
+	for dg in $delegated_list; do
+		flags=$(eval "echo \${delegated_${dg}_flags}")
+		if [ -x ${command} -a -n "$flags" ]; then
+			${command} ADMIN=${delegated_admin} LOGFILE=${delegated_logdir}/${dg}'[date+%Y%m%d]'.log ${flags} >/dev/null 2>&1
+			echo -n " ${dg}"
+		fi
+	done
+	echo "."
+}
+ 
+delegated_stop() {
+	echo -n "Stopping delegated for"
+	for dg in $delegated_list; do
+		flags=$(eval "echo \${delegated_${dg}_flags}")
+		if [ -x ${command} -a -n "$flags" ]; then
+			${command} ADMIN=${delegated_admin} LOGFILE=${delegated_logdir}/${dg}'[date+%Y%m%d]'.log ${flags} -Fkill >/dev/null 2>&1
+			echo -n " ${dg}"
+		fi
+	done
+	echo "."
+}
+
+delegated_status() {
+	ps axw | fgrep ${command} | fgrep -v grep
+}
+
+load_rc_config ${name}
+run_rc_command "$1"
+

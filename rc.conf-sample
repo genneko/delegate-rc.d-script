@@ -1,0 +1,5 @@
+delegated_enable="YES"
+delegated_admin="yourname@example.com"
+delegated_list="xmpp"
+delegated_xmpp_flags="-P192.168.10.5:5222 SERVER=tcprelay://127.1.1.1:5222 PERMIT=*:*:*.example.com,openfire"
+delegated_xmpp_flags="+=/usr/local/etc/delegate/xmpp.conf"
